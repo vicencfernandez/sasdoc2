@@ -1,0 +1,121 @@
+{% load static %}
+
+<!-- Main Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+            <img src="{% static 'images/favicon.ico' %}" alt="Logo" style="width: 45px; height: 40px; margin-right: 10px;">
+            SASDOC 2.0
+        </a>      
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                {% if user.is_authenticated %}
+                    <!-- NAVBAR of Director Role -->
+                    {% if user.role == 'director' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'directorapp:director_dashboard' %}">Inici</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#generalParametersNavbar" aria-expanded="false" aria-controls="generalParametersNavbar" onclick="toggleNavbar(event, 'generalParametersNavbar', ['courseParametersNavbar'])">
+                                Paràmetres generals
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#courseParametersNavbar" aria-expanded="false" aria-controls="courseParametersNavbar" onclick="toggleNavbar(event, 'courseParametersNavbar', ['generalParametersNavbar'])">
+                                Paràmetres del curs actual
+                            </a>
+                        </li>
+                   
+                        <!-- Section Chief Role Navbar -->
+                    {% elif user.role == 'section_chief' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'sectionchiefapp:sectionchief_dashboard' %}">Inici</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#sectionchiefNavbar" aria-expanded="false" aria-controls="sectionchiefNavbar">
+                                Paràmetres generals
+                            </a>
+                        </li>
+
+                    <!-- Professor Role -->
+                    {% elif user.role == 'professor' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'professorapp:professor_dashboard' %}"> Inici</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'professorapp:info_assignments' %}"> La meva assignació docent</a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+
+            <!-- User Info / Logout -->
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item d-flex align-items-center">
+                        <span class="navbar-text">Hola,<strong> {{ user.username }} </strong></span> &nbsp;&nbsp;
+                        <a class="nav-link" href="{% url 'usersapp:logout' %}">Sortir</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'usersapp:login' %}">Iniciar sessió</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Subnavbar DIRECTOR Below the Main Navbar -->
+<div class="container-fluid mt-1">
+    {% if user.is_authenticated and user.role == 'director' %}
+        <!-- Include General Parameters Navbar -->
+        <div class="collapse {% if '/users/professor-management/' in request.path or '/users/professor/' in request.path or '/users/professor-create/' in request.path or '/users/professor-information/' in request.path or '/users/professor-edit/' in request.path or '/users/professor-upload/' in request.path or '/users/sectionchief/' in request.path or '/academicinfo/fields/' in request.path or '/academicinfo/sections/' in request.path or '/academicinfo/schools/' in request.path or '/academicinfo/degrees/' in request.path or '/academicinfo/courses/' in request.path or '/academicinfo/typeprofessor/' in request.path or '/academicinfo/year' in request.path or '/academicinfo/languages' in request.path %}show{% endif %}" id="generalParametersNavbar">
+            {% include 'navbars/navbar-general-parameters.html' %}
+        </div> 
+          <!-- Include Course Parameters Subnavbar -->
+          <div class="collapse {% if '/professorsection/' in request.path %}show{% endif %}" id="courseParametersNavbar">
+            {% include 'navbars/navbar-course-parameters.html' %}
+        </div>
+
+    {% endif %}
+</div>
+
+<!-- Subnavbar for SECTIONCHIEF-->
+<div class="container-fluid mt-1">
+    {% if user.is_authenticated and user.role == 'section_chief' %}
+        <div class="collapse {% if '/infosection/' in request.path or '/sectionchief/' in request.path   or '/professor/info/' in request.path or '/professor/details-professor/' in request.path %}show{% endif %}"  id="sectionchiefNavbar">
+            {% include 'navbars/navbar-sectionchief-parameters.html' with selected_year=selected_year %}
+        </div>
+    {% endif %}
+</div>
+
+
+<!-- JavaScript for Toggle Functionality -->
+<script>
+    function toggleNavbar(event, targetNavbar, otherNavbars) {
+        const targetElement = document.getElementById(targetNavbar);
+
+        // Prevent default action if the clicked navbar is already active
+        if (targetElement.classList.contains('show')) {
+            event.preventDefault();
+            return;
+        }
+
+        // Collapse the other navbars
+        otherNavbars.forEach(navbar => {
+            const otherElement = document.getElementById(navbar);
+            if (otherElement.classList.contains('show')) {
+                otherElement.classList.remove('show');
+            }
+        });
+
+        // Toggle the target navbar
+        targetElement.classList.toggle('show');
+    }
+</script>

@@ -1,0 +1,184 @@
+{% extends 'base-template/base.html' %}
+
+{% block title %}Caps de secció{% endblock %}
+
+{% block content %}
+<div class="container-fluid d-flex" style="min-height: 100vh;">
+    <div class="col-lg-10 mx-auto">
+        <h2 style="text-align:center">Gestió dels caps de secció</h2>
+
+        <!-- Display success, warning, or error messages -->
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <hr>
+
+        <div class="row">
+            <div class="col-lg-10">
+                  <!-- Filter Fields -->
+                  <h3>Filtres pels caps de secció</h3>
+                  <div class="d-flex justify-content-between row mb-2">
+                      <!-- Filters section -->
+                      <div class="filters d-flex flex-wrap">
+                          <div class="col-md-9">
+                              <label for="filter-all">Filtrar per contingut</label>
+                              <input type="text" id="filter-all" class="form-control" placeholder="Cerca per nom, cognom o secció">
+                          </div>
+  
+                          <div class="col-md-3">
+                              <label for="filter-active">Filtrar per  actiu</label>
+                              <select id="filter-active" class="form-select">
+                                  <option value="">Tots</option>
+                                  <option value="yes">Actiu</option>
+                                  <option value="no">No actiu</option>
+                              </select>
+                          </div>
+                      </div>
+                  </div>
+  
+                  <hr>
+                
+                <!-- List of all professors -->
+                <h3>Llistat dels caps de secció</h3>
+                <table class="table table-hover" id="chiefs-table">
+                    <thead>
+                        <tr>
+                            <th class="name-c" style=" width: 15%;">Nom i cognoms</th>
+                            <th class="email-c">Correu electrònic</th>
+                            <th style=" width: 11%;">Secció</th>
+                            <th style=" width: auto;">Comentaris</th>
+                            <th style=" width: 70px;">Actiu</th>
+                            <th class="actions-c" style="width:180px">Accions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if professors %}
+                            {% for professor in professors %}
+                                {% if professor.user.role == 'section_chief' %}
+                                    {% for chief in professor.chief_set.all %}
+                                        <tr class="{% if not professor.isActive %}inactive-row{% endif %}" 
+                                            data-name="{{ professor.name }} {{ professor.family_name }}" 
+                                            data-email="{{ professor.email }}"
+                                            data-section="{{ chief.section }}"
+                                            data-comment="{{professor.comment}}"
+                                            data-active="{{ professor.isActive }}" 
+                                        >
+                                            <td>{{ professor.name }} {{ professor.family_name }}</td>
+                                            <td>{{ professor.email }}</td>
+                                            <td>
+                                                <span class="professor-info">{{ chief.section }}</span>
+                                            </td>
+                                            <td class="no-data">{{ professor.comment }}</td>
+                                            <td>{% if professor.isActive %}Sí{% else %}No{% endif %}</td>
+                                            <td class="actions-c" style="width:200px">
+                                                <!-- Edit button -->
+                                                <a href="{% url 'usersapp:sectionchief_edit' chief.id %}" class="button-edit btn-sm">Editar</a>
+                                                
+                                                <!-- Delete form with JavaScript confirmation -->
+                                                <form method="post" action="{% url 'usersapp:sectionchief_list' %}" style="display:inline;" onsubmit="return confirmDelete('{{ professor.name }} {{professor.family_name}}');">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="confirm_delete" value="{{ chief.pk }}">
+                                                    <button type="submit" class="button-delete btn-sm">Eliminar</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">Cap cap de secció entrat.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                <!-- No results message -->
+                <div id="no-results-message" class="text-center text-danger" style="display:none;">
+                    <span id="no-results-text"></span>
+                </div>
+            </div>
+
+            <!-- Buttons section fixed on the right -->
+            <div class="col-lg-2">
+                <div class="sticky-top" style="top: 1rem;">
+                    <div class="buttons mb-2 d-flex flex-column align-items-center">
+                        <a href="{% url 'usersapp:sectionchief_create' %}" class="button-secondary btn-sm mb-2" style="width: 100%;">Afegir cap de secció</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript function for confirmation -->
+<script>
+    function confirmDelete(NameProfessor) {
+        return confirm("Estàs segur que vols eliminar aquest cap de secció: " + NameProfessor + "?")|| false;
+    }
+
+    //Not using  accents in the filter and in the data
+    function normalizeString(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+    
+    // JavaScript for dynamic filtering
+    document.getElementById('filter-all').addEventListener('input', filterTable);
+    document.getElementById('filter-active').addEventListener('change', filterTable);
+
+    function filterTable() {
+        const searchValue = normalizeString(document.getElementById('filter-all').value);
+        const activeFilter = document.getElementById('filter-active').value;
+        const tableRows = document.querySelectorAll('#chiefs-table tbody tr');
+
+        let rowsVisible = 0;
+
+        tableRows.forEach(row => {
+            const fieldName = row.getAttribute('data-name') ? normalizeString(row.getAttribute('data-name').toLowerCase()) : '';
+            const fieldEmail = row.getAttribute('data-email') ? normalizeString(row.getAttribute('data-email').toLowerCase()) : '';
+            const fieldSection = row.getAttribute('data-section') ? normalizeString(row.getAttribute('data-section').toLowerCase()) : '';
+            const fieldComment = row.getAttribute('data-comment') ? normalizeString(row.getAttribute('data-comment').toLowerCase()) : '';
+
+            const isActive = row.getAttribute('data-active');
+
+            const matchesSearch =  fieldName.includes(searchValue) || fieldEmail.includes(searchValue) || fieldSection.includes(searchValue) || fieldComment.includes(searchValue);
+            const matchesActiveFilter = (activeFilter === '' || isActive === activeFilter);
+
+            if (matchesSearch && matchesActiveFilter) {
+                row.style.display = '';
+                rowsVisible++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const noResultsMessage = document.getElementById('no-results-message');
+        const noResultsText = document.getElementById('no-results-text');
+
+        // No results message logic
+        if (rowsVisible === 0) {
+            let message = "Cap Cap de Secció amb els criteris de cerca";
+            if (searchValue) {
+                message += ` amb el terme "${searchValue}"`;
+            }
+            if (activeFilter) {
+                message += ` actiu "${activeFilter === 'yes' ? 'Sí' : 'No'}"`;
+            }
+            noResultsText.textContent = message + ".";
+            noResultsMessage.style.display = 'block';
+        } else {
+            noResultsMessage.style.display = 'none';
+        }
+    }
+
+</script>
+
+{% endblock %}
