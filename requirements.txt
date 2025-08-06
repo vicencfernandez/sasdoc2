@@ -16,7 +16,6 @@ cffi==1.17.1
 chardet==5.2.0
 charset-normalizer==3.4.1
 click==8.1.8
-cockpit @ file:///builddir/build/BUILD/cockpit-336.2-build/cockpit-336.2/tmp/wheel/cockpit-336.2-py3-none-any.whl#sha256=d84d9a75e73b172a005e38c3a841ddc39c51fb9c43e7aeb7027158b8716b9b88
 colorama==0.4.6
 crypt_r==3.13.1
 cryptography==44.0.0
